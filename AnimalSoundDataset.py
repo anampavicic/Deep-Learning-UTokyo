@@ -126,29 +126,5 @@ class AnimalSoundDataset(Dataset):
         print('Class: {}'.format(label))
         return Audio(x, rate=Fs)
 
-# %% [markdown]
-# How you use the dataset
-
-# %%
-path_parent_project = os.getcwd() #current walk directory
-dataset_image_path = path_parent_project + '\\Animal-Soundprepros\\'
-
-dataset_train = AnimalSoundDataset(dataset_image_path, split='train', split_ratio=0.8, seed=42)
-dataset_val = AnimalSoundDataset(dataset_image_path, split='val', split_ratio=0.8, seed=42)
-
-# %%
-dataset_train[0][0].shape
-
-# %%
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-x_train_list = []
-y_train_list = []
-
-loader = DataLoader(dataset_train, batch_size=len(dataset_train))
-x_train, y_train = next(iter(loader))
-
-loader = DataLoader(dataset_val, batch_size=len(dataset_val))
-x_val, y_val = next(iter(loader))
 
 

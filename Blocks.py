@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import math
+from Utilities.Utilities import Utilities
 
 # %%
 class Conv2DBlock(nn.Module):
