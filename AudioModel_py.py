@@ -25,15 +25,42 @@ class AudioModel(nn.Module):
 
         # Input Shape: (1, 128, target_width)
         layer = Conv2DBlock(in_channels=1, out_channels=80, kernel_size=(57,6),stride=(1,1), dropout_rate=0.5)
-        #layer = nn.Conv2d(in_channels=1, out_channels=80, kernel_size=(57,6),stride=(1,1))
         self.layers.append(layer)
 
         layer = nn.MaxPool2d(kernel_size=(4, 3), stride=(1,3))
         self.layers.append(layer)
 
-        #layer = Conv2DBlock(in_channels=1, out_channels=80, kernel_size=(57,6),stride=(1,1), dropout_rate=0.5)
-        # layer = nn.Conv2d(kernel_size=(4, 3), stride=(1,3))
-        #self.layers.append(layer)
+        layer = Conv2DBlock(in_channels=80, out_channels=80, kernel_size=(1,3),stride=(1,1))
+        self.layers.append(layer)
+
+        layer = nn.MaxPool2d(kernel_size=(1, 3), stride=(1,3))
+        self.layers.append(layer)
+        
+        
+        # Flatten
+        self.layers.append(nn.Flatten())
+        
+        # 100 relus two times
+        # First FC layer
+        self.layers.append(nn.LazyLinear(100))
+        
+        # ReLU activation
+        self.layers.append(nn.ReLU(inplace=True))
+        
+        # Dropout
+        self.layers.append(nn.Dropout(0.5))
+        
+        # Second FC layer
+        self.layers.append(nn.LazyLinear(13))
+        
+        #Relu Activation
+        self.layers.append(nn.ReLU(inplace=True))
+        
+        # Dropout
+        self.layers.append(nn.Dropout(0.5)) 
+        
+        # Softmax
+        self.layers.append(nn.Softmax(dim=1)) 
 
         self.classifier = nn.Sequential(*self.layers)
 
@@ -59,7 +86,6 @@ x_val, y_val = next(iter(loader))
 
 # %%
 model = AudioModel().to(device)
-print(x_val[0])
 y_hat = model(x_val)
 
 # %%
