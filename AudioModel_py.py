@@ -31,8 +31,9 @@ class AudioModel(nn.Module):
         layer = nn.MaxPool2d(kernel_size=(4, 3), stride=(1,3))
         self.layers.append(layer)
 
-        layer = nn.Conv2d(kernel_size=(4, 3), stride=(1,3))
-        self.layers.append(layer)
+        #layer = Conv2DBlock(in_channels=1, out_channels=80, kernel_size=(57,6),stride=(1,1), dropout_rate=0.5)
+        # layer = nn.Conv2d(kernel_size=(4, 3), stride=(1,3))
+        #self.layers.append(layer)
 
         self.classifier = nn.Sequential(*self.layers)
 
@@ -67,3 +68,5 @@ print(y_hat.shape)
 
 
 
+
+# %%

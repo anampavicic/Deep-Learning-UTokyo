@@ -24,10 +24,11 @@ class Conv2DBlock(nn.Module):
         self.dropout_layer = nn.Dropout(dropout_rate)
 
     def forward(self,x):
-        x = self.linear_layer(x)
-        if self.batch_norm_layer is not None:
+        x = self.conv_layer(x)
+        if self.batch_norm_layer:
             x = self.batch_norm_layer(x)
-        x = self.activation(x)
+        if self.activation:
+            x = self.activation(x)
         x = self.dropout_layer(x)
         return x
 
