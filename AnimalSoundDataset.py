@@ -1,7 +1,3 @@
-# %% [markdown]
-# Libraries
-
-# %%
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,34 +12,47 @@ import librosa
 from IPython.display import Audio
 import random
 
-# %% [markdown]
-# change the .csv so the path is correct and add row for the class
+def extract_log_mel_spectrogram(
+    filepath,
+    sr=22050,
+    n_fft=1024,
+    hop_length=512,
+    n_mels=128
+):
+    try:
+        y, _ = librosa.load(filepath, sr=sr)
 
-# %%
-# def change_path(path, new_path):
-#     train_csv = pd.read_csv(path)
-#     train_csv['path']=new_path
-#     train_csv['class'] = train_csv['name'].apply(lambda x: x.split('_')[0])
-#     train_csv.to_csv('data.csv')
-    
-# path = 'C:/Users/Lorena/Documents/Uni/25 SoSe/Deep Learning/DL-mine/Animal_Sound.csv'
-# new_path = 'C:/Users/Lorena/Documents/Uni/25 SoSe/Deep Learning/DL-mine/Animal-Soundprepros'
-# change_path(path, new_path=new_path)
+        # Check if audio is silent or invalid
+        if not np.isfinite(y).all() or np.max(np.abs(y)) == 0:
+            raise ValueError("Invalid or silent audio")
 
-# data_path = 'C:/Users/Lorena/Documents/Uni/25 SoSe/Deep Learning/DL-mine/data.csv'
-# train_csv = pd.read_csv(data_path)
+        # Normalize safely
+        y = y / np.max(np.abs(y))
 
-# %%
-# print(train_csv.head())
+        # Compute mel spectrogram
+        mel = librosa.feature.melspectrogram(
+            y=y,
+            sr=sr,
+            n_fft=n_fft,
+            hop_length=hop_length,
+            n_mels=n_mels,
+        )
 
-# %% [markdown]
-# Bring into form so it can be used in ML
+        # Convert to log scale
+        log_mel = librosa.power_to_db(mel, ref=np.max)
 
-# %% [markdown]
-# PyTorch Website:
-#     https://docs.pytorch.org/tutorials/beginner/data_loading_tutorial.html
+        # Final safety check
+        if not np.isfinite(log_mel).all():
+            raise ValueError("NaN or inf in spectrogram")
 
-# %%
+        return log_mel
+
+    except Exception as e:
+        print(f"[WARNING] Failed to extract mel from {filepath}: {e}")
+        # Return a zero tensor of expected shape
+        return np.zeros((n_mels, 400), dtype=np.float32)
+
+
 def extract_mel_spectrogram(file_path, sr=22050, n_mels=128):
     y, sr = librosa.load(file_path, sr=sr)
     mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels)
@@ -58,28 +67,26 @@ def pad_or_trim(mel, target_width=400):
         mel = np.pad(mel, ((0, 0), (0, pad_width)), mode='constant')
     return mel
 
-# %% [markdown]
-# Define new Datset, so we get a training and validation Dataset from .wav files
-
-# %%
 class AnimalSoundDataset(Dataset):
-    def __init__(self, root_dir, transform=None, split='train', split_ratio=0.8, seed=42):
-        self.root_dir = root_dir
-        self.classes = sorted(os.listdir(root_dir))
+    def __init__(self, data_path, transform=None, split='train', split_ratio=0.8, seed=42):
         self.transform = transform
+        self.data_path = data_path
 
-        all_paths = []
-        all_labels = []
+        df = pd.read_csv(data_path)
 
-        for idx, class_name in enumerate(self.classes):
-            class_path = os.path.join(root_dir, class_name)
-            for file_name in os.listdir(class_path):
-                if file_name.endswith(".wav"):
-                    all_paths.append(os.path.join(class_path, file_name))
-                    all_labels.append(idx)
+        all_paths = df['path']
+        all_labels = df['name']
+        self.classes = df['name'].unique().tolist()
+
+        # Build label-to-index map
+        self.class_to_idx = {label: idx for idx, label in enumerate(sorted(set(all_labels)))}
+        self.classes = list(self.class_to_idx.keys())  # e.g., ['cat', 'cow', 'dog']
+
+        # Encode labels
+        encoded_labels = [self.class_to_idx[label] for label in all_labels]
 
         # Shuffle and split
-        combined = list(zip(all_paths, all_labels))
+        combined = list(zip(all_paths, encoded_labels))
         random.seed(seed)
         random.shuffle(combined)
         split_point = int(len(combined) * split_ratio)
@@ -98,13 +105,18 @@ class AnimalSoundDataset(Dataset):
         return len(self.file_paths)
 
     def __getitem__(self, idx):
-        mel = extract_mel_spectrogram(self.file_paths[idx])  # [n_mels, time]
-        mel = pad_or_trim(mel, target_width=400)
-        mel = torch.tensor(mel, dtype=torch.float32).unsqueeze(0)  # [1, H, W]
+        # mel = extract_mel_spectrogram(self.file_paths[idx])  # [n_mels, time]
+        # mel = pad_or_trim(mel, target_width=400)
+        # mel = torch.tensor(mel, dtype=torch.float32).unsqueeze(0)  # [1, H, W]
+        # label = self.labels[idx]
+        # return mel, label
+
+        mel_log = extract_log_mel_spectrogram(self.file_paths[idx])  # [n_mels, time]
+        mel_log = pad_or_trim(mel_log, target_width=400)
+        mel_log = torch.tensor(mel_log, dtype=torch.float32).unsqueeze(0)
         label = self.labels[idx]
-        return mel, label
-    
-        
+        return mel_log, label
+  
     def get_class(self,idx):
         label = self.labels[idx]
         return self.classes[label]
@@ -125,6 +137,3 @@ class AnimalSoundDataset(Dataset):
         label = self.get_class(n)
         print('Class: {}'.format(label))
         return Audio(x, rate=Fs)
-
-
-
