@@ -7,7 +7,7 @@ import os
 import torch 
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-from Blocks import Conv2DBlock
+from ClassesML.Blocks import Conv2DBlock
 from AnimalSoundDataset import AnimalSoundDataset
 from Utilities.Utilities import Utilities
 
@@ -55,13 +55,31 @@ class AudioModel(nn.Module):
         layer = nn.MaxPool2d(kernel_size=self.kernel_size_pool[1], stride=self.stride_pool[1])
         self.layers.append(layer)
         
-        
+        # with torch.no_grad():
+        #     dummy_input = torch.zeros(1, self.input_dim, 128, 400)  # set correct target_width
+        #     for layer in self.layers:
+        #         dummy_input = layer(dummy_input)
+        #     print(f"Shape after conv + pool layers: {dummy_input.shape}")
+        #     self.flattened_size = dummy_input.shape[1] * dummy_input.shape[2] * dummy_input.shape[3]
+
         # Flatten
         self.layers.append(nn.Flatten())
         
+        # Compute flattened size with dummy input
+        with torch.no_grad():
+            dummy_input = torch.zeros(1, self.input_dim, 128, 400)
+            dummy_output = dummy_input
+            for layer in self.layers:
+                dummy_output = layer(dummy_output)
+            flattened_size = dummy_output.shape[1]
+
+        # Now we know the size, define the actual linear layers
+        self.layers.append(nn.Linear(flattened_size, self.hidden_layers_size))
+
         # 100 relus two times
         # First FC layer
-        self.layers.append(nn.LazyLinear(self.hidden_layers_size))
+        #self.layers.append(nn.Linear(self.flattened_size, self.hidden_layers_size))
+        #self.layers.append(nn.LazyLinear(self.hidden_layers_size))
         
         # ReLU activation
         self.layers.append(Utilities.get_activation(self.activation))
@@ -79,7 +97,7 @@ class AudioModel(nn.Module):
         self.layers.append(nn.Dropout(self.dropout_rate)) 
         
         # Softmax
-        self.layers.append(nn.Softmax(dim=1)) 
+        #self.layers.append(nn.Softmax(dim=1)) 
 
         self.classifier = nn.Sequential(*self.layers)
 

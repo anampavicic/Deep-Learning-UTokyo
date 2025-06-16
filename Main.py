@@ -7,15 +7,17 @@ import os
 import torch 
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-from Blocks import Conv2DBlock
+
 from AnimalSoundDataset import AnimalSoundDataset
 from AudioModel import AudioModel
+from ClassesML.Blocks import Conv2DBlock
+from ClassesML.AudioTrainer import AudioTrainer
 
 # Libraries for processing sounds
 import librosa
 from IPython.display import Audio
 import random
-# %% Dataset extraction
+#  Dataset extraction
 path_parent_project = os.getcwd() #current walk directory
 dataset_image_path = path_parent_project + '\\Animal-Soundprepros\\'
 
@@ -30,10 +32,9 @@ x_train, y_train = next(iter(loader))
 loader = DataLoader(dataset_val, batch_size=len(dataset_val))
 x_val, y_val = next(iter(loader))
 
-# %% Creating model loop
+#  Creating model loop
 input_dim = 1
 n_classes = int(max(y_train)+1)
-print(n_classes)
 
 hyperparameters = dict(input_dim=input_dim,
                      output_dim=n_classes,
@@ -44,13 +45,16 @@ hyperparameters = dict(input_dim=input_dim,
                      stride_conv=[(1,1),(1,1)],
                      stride_pool=[(1,3),(1,3)],
                      filters=[80,80],
-                     batch_normalization=False,
+                     batch_normalization=True,
                      dropout_rate=0.5,
                      learning_rate=0.002,
                      max_epoch=10)
 
 model = AudioModel(hyperparameters=hyperparameters).to(device)
 y_hat = model(x_val)
+print(y_hat)
 
-# %%
-print(y_hat.shape)
+hyperparameters['batch_size'] = 128
+
+trainer = AudioTrainer(model, dataset_train, dataset_val, hyperparameters, device=device)
+trainer.train()
