@@ -9,7 +9,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 from AnimalSoundDataset import AnimalSoundDataset
-from AudioModel import AudioModel
+from ClassesML.AudioModel import AudioModel
 from ClassesML.Blocks import Conv2DBlock
 from ClassesML.AudioTrainer import AudioTrainer
 
