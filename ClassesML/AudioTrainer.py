@@ -16,7 +16,9 @@ class AudioTrainer:
         self.optimizer = torch.optim.Adam(model.parameters(), lr=self.hyperparameters['learning_rate'])
         self.model.to(device)
 
-    def train(self):
+    def run(self):
+        train_accuracy_dict = {}
+        valid_accuracy_dict = {}
         for epoch in range(self.max_epoch):
             self.model.train()
             total_loss = 0.0 #Running loss
@@ -48,6 +50,12 @@ class AudioTrainer:
                   f"Train Acc: {train_accuracy:.4f}, "
                   f"Val Loss: {val_loss:.4f}, "
                   f"Val Acc: {val_acc:.4f}")
+            
+            train_accuracy_dict[epoch] = train_accuracy
+            valid_accuracy_dict[epoch] = val_acc
+        train_accuracy_list = [train_accuracy_dict[e] for e in train_accuracy_dict.keys()]
+        valid_accuracy_list = [valid_accuracy_dict[e] for e in valid_accuracy_dict.keys()]
+        return train_accuracy_list, valid_accuracy_list
 
     def evaluate(self):
         self.model.eval()
