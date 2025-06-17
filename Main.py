@@ -26,15 +26,9 @@ dataset_val = AnimalSoundDataset(dataset_image_path, split='val', split_ratio=0.
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-loader = DataLoader(dataset_train, batch_size=len(dataset_train))
-x_train, y_train = next(iter(loader))
-
-loader = DataLoader(dataset_val, batch_size=len(dataset_val))
-x_val, y_val = next(iter(loader))
-
 #  Creating model loop
 input_dim = 1
-n_classes = int(max(y_train)+1)
+n_classes = 13
 
 hyperparameters = dict(input_dim=input_dim,
                      output_dim=n_classes,
@@ -46,15 +40,14 @@ hyperparameters = dict(input_dim=input_dim,
                      stride_pool=[(1,3),(1,3)],
                      filters=[80,80],
                      batch_normalization=True,
+                     batch_size = 128,
                      dropout_rate=0.5,
                      learning_rate=0.002,
                      max_epoch=10)
 
 model = AudioModel(hyperparameters=hyperparameters).to(device)
-y_hat = model(x_val)
-print(y_hat)
-
-hyperparameters['batch_size'] = 128
+#y_hat = model(x_val)
+#print(y_hat)
 
 trainer = AudioTrainer(model, dataset_train, dataset_val, hyperparameters, device=device)
 trainer.train()
