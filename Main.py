@@ -18,17 +18,15 @@ import librosa
 from IPython.display import Audio
 import random
 #  Dataset extraction
-path_parent_project = os.getcwd() #current walk directory
-dataset_image_path = path_parent_project + '\\Animal-Soundprepros\\'
-
-dataset_train = AnimalSoundDataset(dataset_image_path, split='train', split_ratio=0.8, seed=42)
-dataset_val = AnimalSoundDataset(dataset_image_path, split='val', split_ratio=0.8, seed=42)
+data_path = 'data/Animal_Sound_reduced.csv'
+dataset_train = AnimalSoundDataset(data_path, split='train', split_ratio=0.8, seed=42)
+dataset_val = AnimalSoundDataset(data_path, split='val', split_ratio=0.8, seed=42)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 #  Creating model loop
 input_dim = 1
-n_classes = 13
+n_classes = len(dataset_train.classes)
 
 hyperparameters = dict(input_dim=input_dim,
                      output_dim=n_classes,
