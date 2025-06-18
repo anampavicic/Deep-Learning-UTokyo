@@ -95,17 +95,16 @@ def extract_segments_with_deltas(file_path, variant='short', silence_threshold=-
 
 
 class AnimalSoundDataset(Dataset):
-    def __init__(self, data_path, split='train', split_ratio=0.8, seed=42, variant='short', silence_threshold=-80):
+    def __init__(self, dataframe, split='train', split_ratio=0.8, seed=42, variant='short', silence_threshold=-80):
         self.variant = variant
         self.silence_threshold = silence_threshold
         self.segment_data = []
 
-        print(f"Loading dataset from {data_path}...")
-        df = pd.read_csv(data_path)
+        self.df = dataframe
 
-        all_paths = df['path']
-        all_labels = df['name']
-        self.classes = sorted(df['name'].unique().tolist())
+        all_paths = self.df['path']
+        all_labels = self.df['name']
+        self.classes = sorted(self.df['name'].unique().tolist())
         self.class_to_idx = {label: idx for idx, label in enumerate(self.classes)}
 
         print(f"Classes found: {self.classes}")
