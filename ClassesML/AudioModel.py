@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from ClassesML.Blocks import Conv2DBlock
-from AnimalSoundDataset import AnimalSoundDataset
 from Utilities.Utilities import Utilities
 
 # Libraries for processing sounds
