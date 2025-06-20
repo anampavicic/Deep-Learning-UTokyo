@@ -3,6 +3,8 @@ import torch.nn as nn
 from tqdm import tqdm
 from Utilities.Utilities import Utilities
 import torch.optim as optim
+from ClassesML.EarlyStopper import EarlyStopper
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 class AudioTrainer:
     def __init__(self, model, train_loader, val_loader, hyperparameters, device='cpu'):
@@ -23,9 +25,27 @@ class AudioTrainer:
             weight_decay=hyperparameters['weight_decay'],  # Default weight decay
             nesterov=hyperparameters['nesterov']  # Nesterov momentum
         )
+
+
+        # Sceduler and early stopper
+        if 'patience_lr' in hyperparameters:
+            self.scheduler = ReduceLROnPlateau(self.optimizer, mode='max',
+                                               patience=hyperparameters['patience_lr'],
+                                               factor=0.1)
+        else:
+            self.scheduler = None
+
+        if 'early_stopping' in hyperparameters:
+            self.early_stopper = EarlyStopper(hyperparameters=hyperparameters)
+        else:
+            self.early_stopper = None
+
+
         self.model.to(device)
 
     def train(self):
+        train_accuracy_dict = {}
+        valid_accuracy_dict = {}
         for epoch in range(self.max_epoch):
             # Set model to training mode
             self.model.train()
@@ -63,6 +83,32 @@ class AudioTrainer:
                   f"Train Acc: {train_accuracy:.4f}, "
                   f"Val Loss: {val_loss:.4f}, "
                   f"Val Acc: {val_accuracy:.4f}")
+            
+            # Learning rate scheduler
+            if self.scheduler:
+                validation_metric = val_accuracy
+                old_lr = self.optimizer.param_groups[0]['lr']
+                self.scheduler.step(validation_metric)
+                new_lr = self.optimizer.param_groups[0]['lr']
+                if old_lr != new_lr:
+                    print(f'Learning rate changed from {old_lr} to {new_lr} at epoch {epoch}')
+            
+            # Early stopping scheduler
+            if self.early_stopper:
+                validation_metric = val_accuracy
+                keep_training = self.early_stopper.set(model=self.model, epoch = epoch, metric_epoch = validation_metric)
+                if not keep_training:
+                    break
+
+            train_accuracy_dict[epoch] = train_accuracy
+            valid_accuracy_dict[epoch] = val_accuracy
+
+            
+
+            
+        train_accuracy_list = [train_accuracy_dict[e] for e in train_accuracy_dict.keys()]
+        valid_accuracy_list = [valid_accuracy_dict[e] for e in valid_accuracy_dict.keys()]
+        return train_accuracy_list, valid_accuracy_list
             
     def evaluate(self):
         self.model.eval()
