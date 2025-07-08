@@ -62,7 +62,7 @@ for k in hyperparameters.keys():
 
 hyperparameter_choices['learning_rate'] = [0.001, 0.002, 0.005]
 hyperparameter_choices['batch_size'] = [32, 64, 128, 256]
-hyperparameter_choices['max_epoch'] = [2]
+hyperparameter_choices['max_epoch'] = [100]
 hyperparameter_choices['hidden_layers_size']=[1000, 5000]
 hyperparameter_choices['patience_lr'] = [5, 10, 15]
 hyperparameter_choices['momentum'] = [0.9, 0.95, 0.85]
@@ -91,10 +91,13 @@ idx = np.argsort(metric_list)
 hyperparameter_sorted = np.array(hyperparameter_try)[idx].tolist()
 df = pd.DataFrame.from_dict(hyperparameter_sorted)
 
+# save the best hyperparameters
 best_hyperparams = hyperparameter_sorted[-1]
-
-# Save to JSON
 with open("configs/audio_model_processed_data_best.json", "w") as f:
     json.dump(best_hyperparams, f, indent=4)
 
 print("Best hyperparameters saved to best_hyperparameters.json")
+
+# save all tried hyperparameters
+df.to_csv("results/all_hyperparameter_trials.csv", index=False)
+print("All hyperparameter trials saved to results/all_hyperparameter_trials.csv")
