@@ -20,12 +20,12 @@
             1
         ]
     ],
-    "patience_lr": 10,
+    "patience_lr": 15,
     "output_dim": 13,
     "nesterov": true,
     "momentum": 0.95,
     "max_epoch": 100,
-    "learning_rate": 0.002,
+    "learning_rate": 0.005,
     "kernel_size_pool": [
         [
             4,
@@ -47,16 +47,16 @@
         ]
     ],
     "input_dim": 2,
-    "hidden_layers_size": 1000,
+    "hidden_layers_size": 5000,
     "filters": [
         80,
         80
     ],
     "early_stopping": true,
     "dropout_rate": 0.5,
-    "batch_size": 32,
+    "batch_size": 64,
     "batch_normalization": false,
     "activation": "relu",
-    "val_accuracy": 92.10526315789474,
-    "train_accuracy": 98.97260273972603
+    "val_accuracy": 95.25657894736842,
+    "train_accuracy": 99.85219594594595
 }

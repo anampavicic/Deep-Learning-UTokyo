@@ -15,6 +15,7 @@ from torchvision.utils import make_grid
 import warnings
 import librosa
 
+import torch.nn.functional as F
 
 
 class Utilities:
@@ -34,30 +35,6 @@ class Utilities:
         return accuracy
 
     @staticmethod
-    def plot_confusion_matrix_fashion(y, y_hat):
-
-        accuracy = Utilities.compute_accuracy(y, y_hat)
-
-        y_hat = np.argmax(y_hat, 1)
-
-        cm = confusion_matrix(y, y_hat)
-        cm_normalized = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
-
-        label_map = {0: 'T-shirt/top', 1: 'Trouser', 2: 'Pullover',
-                     3: 'Dress', 4: 'Coat', 5: 'Sandal',
-                     6: 'Shirt', 7: 'Sneaker', 8: 'Bag', 9: 'Ankle boot'}
-
-        plt.figure()
-        plt.subplot(1, 1, 1)
-        sns.heatmap(cm_normalized, annot=True, fmt=".2f", cmap="Blues",
-                    xticklabels=[label_map[i] for i in range(10)],
-                    yticklabels=[label_map[i] for i in range(10)])
-        plt.xlabel("Predicted label")
-        plt.ylabel("True label")
-        plt.title("Confusion matrix - Accuracy: " + str(accuracy))
-        plt.tight_layout()
-
-    @staticmethod
     def get_activation(activation_str: str or None):
 
         if activation_str == 'relu':
@@ -71,62 +48,6 @@ class Utilities:
         else:
             raise ValueError(f"Unknown activation function: {activation_str}")
 
-    @staticmethod
-    def images_as_canvas(images, title: str = ""):
-
-        canvas = make_grid(images.cpu(), padding=10, nrow=10, normalize=True)
-        canvas = canvas.permute(1, 2, 0).numpy() * 255
-        canvas = canvas.astype("uint8")
-
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        ax.imshow(canvas)
-        ax.axis("off")
-        ax.set_title(title)
-        plt.show()
-
-    @staticmethod
-    def images_2_as_canvas(images, images2, title: str = ""):
-
-        canvas = make_grid(images.cpu(), padding=10, nrow=10, normalize=True)
-        canvas = canvas.permute(1, 2, 0).numpy() * 255
-        canvas = canvas.astype("uint8")
-
-        canvas2 = make_grid(images2.cpu(), padding=10, nrow=10, normalize=True)
-        canvas2 = canvas2.permute(1, 2, 0).numpy() * 255
-        canvas2 = canvas2.astype("uint8")
-
-        canvas = np.concatenate((canvas, canvas2), axis=1)
-
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        ax.imshow(canvas)
-        ax.axis("off")
-        ax.set_title(title)
-        plt.show()
-
-    @staticmethod
-    def plot_latent_space(z_fit, y_fit):
-
-        label_map = {0: 'T-shirt/top', 1: 'Trouser', 2: 'Pullover',
-                     3: 'Dress', 4: 'Coat', 5: 'Sandal',
-                     6: 'Shirt', 7: 'Sneaker', 8: 'Bag', 9: 'Ankle boot'}
-
-        fig = plt.figure(figsize=(16, 10))
-        ax = fig.add_subplot(1, 1, 1)
-
-        cmap = plt.get_cmap('gist_rainbow')
-        colors = cmap(np.linspace(0, 1, 10))
-        colors = dict(zip(label_map.keys(), colors))
-
-        for y in label_map.keys():
-            index = np.where(y_fit == y)
-            ax.scatter(z_fit[index, 0], z_fit[index, 1], color=colors[y],
-                       marker='o', s=30, alpha=0.5,
-                       label=label_map[y])
-
-        ax.legend()
-        plt.show()
     
     @staticmethod
     def extract_segments_with_deltas(file_path, variant='short', silence_threshold=-80):
@@ -207,3 +128,72 @@ class Utilities:
         except Exception as e:
             warnings.warn(f"Failed to process {file_path}: {e}")
             return np.empty((0, 2, 60, frames_per_segment))
+    
+    @staticmethod
+    def predict_clip(model, segment_tensors, device, method='prob'):
+        """
+        Generate prediction for a whole clip given its segments.
+        
+        segment_tensors: tensor of shape (n_segments, channels, mel_bands, frames)
+        method: 'majority' or 'prob'
+        """
+        model.eval()
+        segment_tensors = segment_tensors.to(device)
+        with torch.no_grad():
+            outputs = model(segment_tensors)  # (n_segments, num_classes)
+            probs = F.softmax(outputs, dim=1)
+
+        if method == 'majority':
+            preds = torch.argmax(probs, dim=1)
+            counts = torch.bincount(preds)
+            clip_pred = torch.argmax(counts).item()
+        elif method == 'prob':
+            avg_probs = probs.mean(dim=0)
+            clip_pred = torch.argmax(avg_probs).item()
+        else:
+            raise ValueError("method must be 'majority' or 'prob'")
+
+        return clip_pred
+
+    @staticmethod
+    def plot_confusion_matrix_animals(y, y_hat, label_to_index):
+        accuracy = Utilities.compute_accuracy(y, y_hat)
+
+        y_hat = np.argmax(y_hat, 1)
+
+        cm = confusion_matrix(y, y_hat)
+        cm_normalized = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+        
+        index_to_label = {v: k.capitalize() for k, v in label_to_index.items()}
+        labels = [index_to_label[i] for i in sorted(index_to_label)]
+        
+        plt.figure()
+        plt.subplot(1, 1, 1)
+        sns.heatmap(cm_normalized, annot=True, fmt=".2f", cmap="Blues",
+                    xticklabels=labels, yticklabels=labels)
+        plt.xlabel("Predicted label")
+        plt.ylabel("True label")
+        plt.title("Confusion matrix - Accuracy: " + str(accuracy))
+        plt.xticks(rotation=45, ha='right')
+        plt.yticks(rotation=0)
+        plt.tight_layout()
+        plt.savefig("results/confusion_matrix_modified_best.png")
+        plt.close()
+        print("Saved the confusion matrix to results/confusion_matrix_modified_best.png")
+        return 
+    
+    @staticmethod
+    def plot_graphs(max_train_acc_list, max_val_acc_list):
+        plt.figure()
+        plt.plot(max_train_acc_list, 'b', label='Train accuracy')
+        plt.plot(max_val_acc_list, 'r', label='Valid accuracy')
+        plt.title('Train and Validation Accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')  
+        plt.legend()
+        plt.savefig("results/graphs_modified.png")
+        plt.close()
+        print("Saved the graphs to results/graphs_modified.png")
+        return 
+
+

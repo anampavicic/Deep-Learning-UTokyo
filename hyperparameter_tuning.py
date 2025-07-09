@@ -18,7 +18,7 @@ import json
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Define dataset
-df = pd.read_csv('data/Animal_Sound_processed.csv')
+df = pd.read_csv('data/Animal_Sound_modified.csv')
 
 dataset_train = AnimalSoundDataset(df, split='train', split_ratio=0.8, seed=42)
 dataset_val = AnimalSoundDataset(df, split='val', split_ratio=0.8, seed=42)
@@ -93,11 +93,11 @@ df = pd.DataFrame.from_dict(hyperparameter_sorted)
 
 # save the best hyperparameters
 best_hyperparams = hyperparameter_sorted[-1]
-with open("configs/audio_model_processed_data_best.json", "w") as f:
+with open("configs/audio_model_modified_data_best.json", "w") as f:
     json.dump(best_hyperparams, f, indent=4)
 
-print("Best hyperparameters saved to best_hyperparameters.json")
+print("Best hyperparameters saved to audio_model_modified_data_best.json")
 
 # save all tried hyperparameters
-df.to_csv("results/all_hyperparameter_trials.csv", index=False)
-print("All hyperparameter trials saved to results/all_hyperparameter_trials.csv")
+df.to_csv("results/all_hyperparameter_trials_modified.csv", index=False)
+print("All hyperparameter trials saved to results/all_hyperparameter_trials_modified.csv")
