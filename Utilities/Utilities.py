@@ -156,34 +156,31 @@ class Utilities:
         return clip_pred
 
     @staticmethod
-    def plot_confusion_matrix_animals(y, y_hat, label_to_index):
-        accuracy = Utilities.compute_accuracy(y, y_hat)
+    def plot_confusion_matrix_animals(y_true, y_pred, label_to_index, fig_path = "results/confusion_matrix_modified_best.png"):
+        # y_pred is already class indices, so compute accuracy directly
+        accuracy = np.mean(np.array(y_true) == np.array(y_pred)) * 100
 
-        y_hat = np.argmax(y_hat, 1)
-
-        cm = confusion_matrix(y, y_hat)
+        cm = confusion_matrix(y_true, y_pred)
         cm_normalized = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
         
         index_to_label = {v: k.capitalize() for k, v in label_to_index.items()}
         labels = [index_to_label[i] for i in sorted(index_to_label)]
         
         plt.figure()
-        plt.subplot(1, 1, 1)
         sns.heatmap(cm_normalized, annot=True, fmt=".2f", cmap="Blues",
                     xticklabels=labels, yticklabels=labels)
         plt.xlabel("Predicted label")
         plt.ylabel("True label")
-        plt.title("Confusion matrix - Accuracy: " + str(accuracy))
+        plt.title("Confusion matrix - Accuracy: {:.2f}%".format(accuracy))
         plt.xticks(rotation=45, ha='right')
         plt.yticks(rotation=0)
         plt.tight_layout()
-        plt.savefig("results/confusion_matrix_modified_best.png")
+        plt.savefig(fig_path)
         plt.close()
-        print("Saved the confusion matrix to results/confusion_matrix_modified_best.png")
-        return 
+        print(f"Saved the confusion matrix to f{fig_path}")
     
     @staticmethod
-    def plot_graphs(max_train_acc_list, max_val_acc_list):
+    def plot_graphs(max_train_acc_list, max_val_acc_list, fig_path = "results/graphs_modified.png"):
         plt.figure()
         plt.plot(max_train_acc_list, 'b', label='Train accuracy')
         plt.plot(max_val_acc_list, 'r', label='Valid accuracy')
@@ -191,9 +188,9 @@ class Utilities:
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')  
         plt.legend()
-        plt.savefig("results/graphs_modified.png")
+        plt.savefig(fig_path)
         plt.close()
-        print("Saved the graphs to results/graphs_modified.png")
+        print(f"Saved the graphs to {fig_path}")
         return 
 
 
